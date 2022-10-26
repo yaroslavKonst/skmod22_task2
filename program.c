@@ -4,7 +4,6 @@
 
 #include <mpi.h>
 
-#define POINTS 1000
 #define SOLUTION 0.06225419868854213
 
 struct point
@@ -28,25 +27,21 @@ double get_random(double min, double range)
 	return min + (double)rand() * range / (double)RAND_MAX;
 }
 
-struct point* generate_points(int count)
+void generate_points(int count, struct point* buffer)
 {
-	struct point* buffer = malloc(sizeof(struct point) * count);
-
 	for (int idx = 0; idx < count; ++idx) {
 		buffer[idx].x = get_random(0.0, 1.0);
 		buffer[idx].y = get_random(0.0, 1.0);
 		buffer[idx].z = get_random(0.0, 1.0);
 	}
-
-	return buffer;
 }
 
-void master(int rank, int n_proc, double epsilon)
+void master(int rank, int n_proc, double epsilon, int points)
 {
 	double sum = 0;
 	int n_points = 0;
 
-	int points_per_iter_local = POINTS / (n_proc - 1);
+	int points_per_iter_local = points / (n_proc - 1);
 	int points_per_iter = points_per_iter_local * (n_proc - 1);
 
 	int* init_scatter_count = malloc(sizeof(int) * n_proc);
@@ -69,7 +64,10 @@ void master(int rank, int n_proc, double epsilon)
 		scatter_offset[idx] = (idx - 1) * points_per_iter_local * 3;
 	}
 
-	struct point* points_buf = generate_points(points_per_iter);
+	struct point* points_buf = malloc(
+		sizeof(struct point) * points_per_iter);
+
+	generate_points(points_per_iter, points_buf);
 
 	do {
 		n_points += points_per_iter;
@@ -96,8 +94,7 @@ void master(int rank, int n_proc, double epsilon)
 			0,
 			MPI_COMM_WORLD);
 
-		free(points_buf);
-		points_buf = generate_points(points_per_iter);
+		generate_points(points_per_iter, points_buf);
 
 		double value;
 		double zero = 0;
@@ -112,8 +109,6 @@ void master(int rank, int n_proc, double epsilon)
 			MPI_COMM_WORLD);
 
 		sum += value;
-
-		//printf("%lf\n", sum / (double)n_points);
 	} while (fabs((sum / (double)n_points) - SOLUTION) >= epsilon);
 
 	free(points_buf);
@@ -139,6 +134,10 @@ void master(int rank, int n_proc, double epsilon)
 
 void worker(int rank, int n_proc)
 {
+	int m = 0;
+
+	struct point* buffer;
+
 	while (1)
 	{
 		int points;
@@ -158,7 +157,11 @@ void worker(int rank, int n_proc)
 			break;
 		}
 
-		struct point* buffer = malloc(sizeof(struct point) * points);
+		if (!m) {
+			buffer = malloc(sizeof(struct point) * points);
+			m = 1;
+		}
+
 		MPI_Scatterv(
 			NULL,
 			NULL,
@@ -172,12 +175,10 @@ void worker(int rank, int n_proc)
 
 		double sum = 0;
 
-		//#pragma omp parallel for reduction(+:sum)
+		#pragma omp parallel for reduction(+:sum)
 		for (int idx = 0; idx < points; ++idx) {
 			sum += f(buffer + idx);
 		}
-
-		free(buffer);
 
 		MPI_Reduce(
 			&sum,
@@ -187,6 +188,10 @@ void worker(int rank, int n_proc)
 			MPI_SUM,
 			0,
 			MPI_COMM_WORLD);
+	}
+
+	if (m) {
+		free(buffer);
 	}
 }
 
@@ -206,7 +211,9 @@ int main(int argc, char** argv)
 		double epsilon = atof(argv[1]);
 		printf("e = %.17lf\n", epsilon);
 
-		master(rank, n_proc, epsilon);
+		int points = atoi(argv[2]);
+
+		master(rank, n_proc, epsilon, points);
 	} else {
 		worker(rank, n_proc);
 	}
