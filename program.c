@@ -6,17 +6,10 @@
 
 #define SOLUTION 0.06225419868854213
 
-struct point
+double f(double x, double y, double z)
 {
-	double x;
-	double y;
-	double z;
-};
-
-double f(struct point* p)
-{
-	if (p->x * p->x + p->y * p->y + p->z * p->z <= 1.0) {
-		return sin(p->x * p->x + p->z * p->z) * p->y;
+	if (x * x + y * y + z * z <= 1.0) {
+		return sin(x * x + z * z) * y;
 	} else {
 		return 0.0;
 	}
@@ -27,12 +20,13 @@ double get_random(double min, double range)
 	return min + (double)rand() * range / (double)RAND_MAX;
 }
 
-void generate_points(int count, struct point* buffer)
+void generate_points(int count, double* buffer)
 {
+	#pragma omp parallel for
 	for (int idx = 0; idx < count; ++idx) {
-		buffer[idx].x = get_random(0.0, 1.0);
-		buffer[idx].y = get_random(0.0, 1.0);
-		buffer[idx].z = get_random(0.0, 1.0);
+		buffer[idx * 3] = get_random(0.0, 1.0);
+		buffer[idx * 3 + 1] = get_random(0.0, 1.0);
+		buffer[idx * 3 + 2] = get_random(0.0, 1.0);
 	}
 }
 
@@ -55,10 +49,12 @@ void master(int rank, int n_proc, double epsilon, int points)
 		scatter_offset[idx] = (idx - 1) * points_per_iter_local * 3;
 	}
 
-	struct point* points_buf = malloc(
-		sizeof(struct point) * points_per_iter);
+	double* points_buf = malloc(
+		sizeof(double) * points_per_iter * 3);
 
 	generate_points(points_per_iter, points_buf);
+
+	int iterations = 0;
 
 	do {
 		n_points += points_per_iter;
@@ -83,7 +79,7 @@ void master(int rank, int n_proc, double epsilon, int points)
 
 		generate_points(points_per_iter, points_buf);
 
-		double value;
+		double value = 0;
 		double zero = 0;
 
 		MPI_Reduce(
@@ -96,9 +92,12 @@ void master(int rank, int n_proc, double epsilon, int points)
 			MPI_COMM_WORLD);
 
 		sum += value;
+		++iterations;
 	} while (fabs((sum / (double)n_points) - SOLUTION) >= epsilon);
 
 	free(points_buf);
+	free(scatter_offset);
+	free(scatter_count);
 
 	int zero = 0;
 
@@ -113,13 +112,14 @@ void master(int rank, int n_proc, double epsilon, int points)
 
 	printf("Result = %.17lf\n", result);
 	printf("Error = %.17lf\n", fabs(result - SOLUTION));
+	printf("Iterations = %d\n", iterations);
 }
 
 void worker(int rank, int n_proc)
 {
 	int m = 0;
 
-	struct point* buffer;
+	double* buffer;
 
 	while (1)
 	{
@@ -137,7 +137,7 @@ void worker(int rank, int n_proc)
 		}
 
 		if (!m) {
-			buffer = malloc(sizeof(struct point) * points);
+			buffer = malloc(sizeof(double) * points * 3);
 			m = 1;
 		}
 
@@ -154,9 +154,11 @@ void worker(int rank, int n_proc)
 
 		double sum = 0;
 
-		#pragma omp parallel for reduction(+:sum)
 		for (int idx = 0; idx < points; ++idx) {
-			sum += f(buffer + idx);
+			sum += f(
+				buffer[idx * 3],
+				buffer[idx * 3 + 1],
+				buffer[idx * 3 + 2]);
 		}
 
 		MPI_Reduce(

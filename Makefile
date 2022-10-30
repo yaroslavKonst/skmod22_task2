@@ -1,12 +1,12 @@
 .PHONY: compile run
 
 PREC=1.5e-6
-POINTS=1000
+POINTS=50000
 
 compile: program
 
 program: program.c
-	mpicc -Wall -fopenmp -o program program.c -lm
+	mpicc -Wall -O3 -fopenmp -o program program.c -lm
 
 run: compile
 	mpirun --use-hwthread-cpus -np 2 ./program $(PREC) $(POINTS)
