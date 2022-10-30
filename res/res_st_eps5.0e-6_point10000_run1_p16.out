@@ -1,0 +1,55 @@
+Sender: LSF System <lsfadmin@polus-c2-ib.bmc.hpc.cs.msu.ru>
+Subject: Job 951670: <# this file was automaticly created by mpisubmit.pl script for edu-cmc-skmodel22-621-01 #;source /polusfs/setenv/setup.SMPI;#BSUB -n 16;#BSUB -W 00:15;#BSUB -o res/res_st_eps5.0e-6_point10000_run1_p16.out;#BSUB -e program.%J.err;OMP_NUM_THREADS=8 mpiexec program 5.0e-6 10000> in cluster <MSUCluster> Done
+
+Job <# this file was automaticly created by mpisubmit.pl script for edu-cmc-skmodel22-621-01 #;source /polusfs/setenv/setup.SMPI;#BSUB -n 16;#BSUB -W 00:15;#BSUB -o res/res_st_eps5.0e-6_point10000_run1_p16.out;#BSUB -e program.%J.err;OMP_NUM_THREADS=8 mpiexec program 5.0e-6 10000> was submitted from host <polus-ib.bmc.hpc.cs.msu.ru> by user <edu-cmc-skmodel22-621-01> in cluster <MSUCluster> at Sun Oct 30 12:17:29 2022
+Job was executed on host(s) <12*polus-c2-ib.bmc.hpc.cs.msu.ru>, in queue <short>, as user <edu-cmc-skmodel22-621-01> in cluster <MSUCluster> at Sun Oct 30 12:17:45 2022
+                            <4*polus-c4-ib.bmc.hpc.cs.msu.ru>
+</home_edu/edu-cmc-skmodel22-621/edu-cmc-skmodel22-621-01> was used as the home directory.
+</home_edu/edu-cmc-skmodel22-621/edu-cmc-skmodel22-621-01/task2> was used as the working directory.
+Started at Sun Oct 30 12:17:45 2022
+Terminated at Sun Oct 30 12:18:00 2022
+Results reported at Sun Oct 30 12:18:00 2022
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+# this file was automaticly created by mpisubmit.pl script for edu-cmc-skmodel22-621-01 #
+source /polusfs/setenv/setup.SMPI
+#BSUB -n 16
+#BSUB -W 00:15
+#BSUB -o res/res_st_eps5.0e-6_point10000_run1_p16.out
+#BSUB -e program.%J.err
+OMP_NUM_THREADS=8 mpiexec program 5.0e-6 10000
+
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   266.39 sec.
+    Max Memory :                                 650 MB
+    Average Memory :                             487.75 MB
+    Total Requested Memory :                     -
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              16
+    Max Threads :                                52
+    Run time :                                   14 sec.
+    Turnaround time :                            31 sec.
+
+The output (if any) follows:
+
+e = 0.00000500000000000
+Points = 10000
+Result = 0.06225866940919678
+Error = 0.00000447072065465
+Iterations = 788
+Time = 12.22260979795828462
+
+
+PS:
+
+Read file <program.951670.err> for stderr output of this job.
+
