@@ -44,22 +44,13 @@ void master(int rank, int n_proc, double epsilon, int points)
 	int points_per_iter_local = points / (n_proc - 1);
 	int points_per_iter = points_per_iter_local * (n_proc - 1);
 
-	int* init_scatter_count = malloc(sizeof(int) * n_proc);
-	int* init_scatter_offset = malloc(sizeof(int) * n_proc);
-
 	int* scatter_count = malloc(sizeof(int) * n_proc);
 	int* scatter_offset = malloc(sizeof(int) * n_proc);
-
-	init_scatter_count[0] = 0;
-	init_scatter_offset[0] = 0;
 
 	scatter_count[0] = 0;
 	scatter_offset[0] = 0;
 
 	for (int idx = 1; idx < n_proc; ++idx) {
-		init_scatter_count[idx] = 1;
-		init_scatter_offset[idx] = 0;
-
 		scatter_count[idx] = points_per_iter_local * 3;
 		scatter_offset[idx] = (idx - 1) * points_per_iter_local * 3;
 	}
@@ -72,13 +63,9 @@ void master(int rank, int n_proc, double epsilon, int points)
 	do {
 		n_points += points_per_iter;
 
-		MPI_Scatterv(
+		MPI_Bcast(
 			&points_per_iter_local,
-			init_scatter_count,
-			init_scatter_offset,
-			MPI_INT,
-			NULL,
-			0,
+			1,
 			MPI_INT,
 			0,
 			MPI_COMM_WORLD);
@@ -115,13 +102,9 @@ void master(int rank, int n_proc, double epsilon, int points)
 
 	int zero = 0;
 
-	MPI_Scatterv(
+	MPI_Bcast(
 		&zero,
-		init_scatter_count,
-		init_scatter_offset,
-		MPI_INT,
-		NULL,
-		0,
+		1,
 		MPI_INT,
 		0,
 		MPI_COMM_WORLD);
@@ -142,11 +125,7 @@ void worker(int rank, int n_proc)
 	{
 		int points;
 
-		MPI_Scatterv(
-			NULL,
-			NULL,
-			NULL,
-			MPI_INT,
+		MPI_Bcast(
 			&points,
 			1,
 			MPI_INT,
@@ -212,6 +191,7 @@ int main(int argc, char** argv)
 		printf("e = %.17lf\n", epsilon);
 
 		int points = atoi(argv[2]);
+		printf("Points = %d\n", points);
 
 		master(rank, n_proc, epsilon, points);
 	} else {
